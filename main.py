@@ -13,7 +13,7 @@ if __name__ == "__main__":
     "XLE": "XOM US Equity",
     "XLF": "JPM US Equity"
     }
-    etf_list = ["XLK","XLE", "XLF"]
+    etf_list = ["XLK"]
     
     for etf in etf_list:
         df = make_combined_features(
@@ -51,4 +51,3 @@ if __name__ == "__main__":
     models = ["Autoformer", "LSTM", "GRU", "Linear"]
     summary_df = backtest_Model_all(etf_list, models)
     print(summary_df)
-

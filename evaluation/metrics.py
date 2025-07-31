@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 def evaluate_prediction(y_true: np.ndarray, y_pred: np.ndarray) -> dict:

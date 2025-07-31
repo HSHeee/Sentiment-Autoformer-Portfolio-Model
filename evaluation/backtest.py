@@ -18,33 +18,35 @@ def simple_backtest(pred_path: str, price_path: str, etf: str = "") -> pd.DataFr
     """
     # 1. Autoformer 예측 불러오기
     pred_df = pd.read_csv(pred_path)
-    y_true = pred_df["true"].values
-    y_pred = pred_df["pred"].values
-
-    # 2. 시그널 생성: 다음 수익률 예측
-    signal = (y_pred > y_true).astype(int)  # 오를 것으로 예측하면 1 (long), 아니면 0 (cash)
-
-    # 3. 가격 불러오기 (실제 ETF 수익률 계산용)
     price_df = pd.read_csv(price_path, index_col=0, parse_dates=True)
     price_df = price_df[~price_df.index.duplicated(keep="first")]
     price_df = price_df.sort_index()
 
-    # 예측 기간에 해당하는 리턴만 추출
-    start_idx = -len(signal)
-    ret = price_df["close"].pct_change().fillna(0).values[start_idx:]
+    # 날짜 기준 merge
+    if "date" in pred_df.columns:
+        pred_df["date"] = pd.to_datetime(pred_df["date"])
+        price_df = price_df.reset_index().rename(columns={"index": "date"})
+        merged = pd.merge(pred_df, price_df, on="date", how="inner")
+        y_true = merged["true"].values
+        y_pred = merged["pred"].values
+        ret = merged["close"].pct_change().fillna(0).values
+    else:
+        # 기존 방식 fallback
+        y_true = pred_df["true"].values
+        y_pred = pred_df["pred"].values
+        start_idx = -len(y_true)
+        ret = price_df["close"].pct_change().fillna(0).values[start_idx:]
 
-    # 4. 전략 수익률: signal * return
+    signal = (y_pred > y_true).astype(int)
     strategy_ret = signal * ret
 
-    # 5. 누적 수익률 계산
     strategy_cum = np.cumprod(1 + strategy_ret)
     bench_cum = np.cumprod(1 + ret)
 
-    # 6. 결과 정리
     result_df = pd.DataFrame({
         "Strategy": strategy_cum,
         "Benchmark": bench_cum
-    }, index=price_df.index[start_idx:])
+    }, index=merged["date"] if "date" in pred_df.columns else price_df.index[start_idx:])
 
     # 7. 시각화
     plt.figure(figsize=(10, 5))
