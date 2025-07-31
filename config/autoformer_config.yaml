@@ -1,0 +1,17 @@
+model: 'Autoformer'
+data: 'custom'
+features: 'M'         # multivariate
+seq_len: 30
+label_len: 15
+pred_len: 5
+e_layers: 2
+d_layers: 1
+factor: 3
+enc_in: 16            # feature 수
+dec_in: 16
+c_out: 1              # 예측 대상 수
+des: 'Exp'
+itr: 1
+train_epochs: 10
+batch_size: 32
+learning_rate: 0.0005

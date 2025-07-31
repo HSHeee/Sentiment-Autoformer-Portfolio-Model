@@ -28,6 +28,6 @@ def merge_price_and_sentiment(price_df: pd.DataFrame, sentiment_df: pd.DataFrame
     merged_df = price_df.merge(sentiment_df, how='left', left_index=True, right_index=True)
 
     # 결측치는 forward fill, 필요시 dropna도 가능
-    merged_df = merged_df.fillna(method='ffill')
+    merged_df = merged_df.ffill()
 
     return merged_df
