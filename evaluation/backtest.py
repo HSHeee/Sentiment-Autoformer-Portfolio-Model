@@ -2,7 +2,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import matplotlib.font_manager as fm
+import platform
 
+font_path = "C:/Windows/Fonts/malgun.ttf"
+# 폰트 설정 적용
+font_prop = fm.FontProperties(fname=font_path)
+plt.rcParams["font.family"] = font_prop.get_name()
+
+# 마이너스 부호 깨짐 방지
+plt.rcParams["axes.unicode_minus"] = False
 
 def simple_backtest(pred_path: str, price_path: str, etf: str = "") -> pd.DataFrame:
     """
@@ -29,13 +38,13 @@ def simple_backtest(pred_path: str, price_path: str, etf: str = "") -> pd.DataFr
         merged = pd.merge(pred_df, price_df, on="date", how="inner")
         y_true = merged["true"].values
         y_pred = merged["pred"].values
-        ret = merged["close"].pct_change().fillna(0).values
+        ret = merged["return"].fillna(0).values
     else:
         # 기존 방식 fallback
         y_true = pred_df["true"].values
         y_pred = pred_df["pred"].values
         start_idx = -len(y_true)
-        ret = price_df["close"].pct_change().fillna(0).values[start_idx:]
+        ret = price_df["return"].fillna(0).values[start_idx:]
 
     signal = (y_pred > y_true).astype(int)
     strategy_ret = signal * ret
@@ -87,13 +96,13 @@ def compute_risk_metrics(ret: np.ndarray) -> dict:
     }
 
 
-def backtest_all(etf_list, output_root="outputs", price_root="data/processed"):
+def backtest_all(etf_list, model_name="Autoformer", output_root="outputs", price_root="data/processed"):
     """
     여러 ETF를 반복 백테스트하고 수익률/리스크 지표 비교
 
     Parameters:
     - etf_list: 예측한 ETF 티커 리스트
-    - output_root: prediction.csv 위치 기준
+    - output_root: etf_prediction.csv 위치 기준
     - price_root: 실제 ETF 가격 (정규화된 features.csv 경로)
 
     Returns:
@@ -102,7 +111,7 @@ def backtest_all(etf_list, output_root="outputs", price_root="data/processed"):
     result_summary = []
 
     for etf in etf_list:
-        pred_path = os.path.join(output_root, etf, "prediction.csv")
+        pred_path = os.path.join(output_root, model_name, f"{etf}_prediction.csv")
         price_path = os.path.join(price_root, f"{etf}_features.csv")
 
         if not os.path.exists(pred_path) or not os.path.exists(price_path):

@@ -9,6 +9,7 @@ def train_autoformer(
     etf: str,
     input_dir: str = "data/autoformer_input",
     output_dir: str = "outputs",
+    model_name = "Autoformer",
     pred_len: int = 5,
     target: str = "close"
 ):
@@ -35,7 +36,7 @@ def train_autoformer(
 
     # command-line 인자 구성
     command = [
-        "python", r"C:\Project\Autoformer/run.py",
+        "python", r"C:\Project\Autoformer\run.py",
         "--is_training", "1",
         "--root_path", root_path,
         "--data_path", data_path,
@@ -71,7 +72,8 @@ def train_autoformer(
     results_dir = os.path.join("results", setting)
     pred_path = os.path.join(results_dir, "pred.npy")
     true_path = os.path.join(results_dir, "true.npy")
-    csv_path = os.path.join(output_dir, "prediction.csv")
+    csv_path = os.path.join(output_dir, model_name, f"{etf}_prediction.csv")
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 
     """if os.path.exists(pred_path) and os.path.exists(true_path):
         preds = np.load(pred_path)

@@ -35,8 +35,11 @@ def make_combined_features(
     senti_df.index = pd.to_datetime(senti_df.index)
 
     df_merged = pd.merge(price_df, senti_df, left_index=True, right_index=True, how="inner")
+    #5일 수익률!!!
+    df_merged["return_5d"] = df_merged["close"].pct_change(periods=5).shift(-5)
+    df_merged["return"] = df_merged["close"].pct_change(periods=5).shift(-1)
 
     # 4. 결측치 보간 또는 제거
-    df_merged = df_merged.interpolate(method="linear").dropna()
+    df_merged = df_merged.infer_objects(copy=False).interpolate(method="linear").dropna()
 
     return df_merged

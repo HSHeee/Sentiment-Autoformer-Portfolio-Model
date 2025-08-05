@@ -14,6 +14,8 @@ if __name__ == "__main__":
     "XLF": "JPM US Equity"
     }
     etf_list = ["XLK"]
+    pred_len = 5
+    TARGET = "return_5d"
     
     for etf in etf_list:
         df = make_combined_features(
@@ -23,31 +25,34 @@ if __name__ == "__main__":
             sentiment_path="data/senti&price.xlsx",
             representative=REPRESENTATIVES[etf]
         )
-        df = df.drop(columns=["ticker"])
-        df_selected, features = lasso_feature_selection(df, target_col="close")
+
+        df = df.drop(columns=["ticker", "close"])
+        df = df.dropna()
+
+        df_selected, features = lasso_feature_selection(df, target_col=TARGET)
         df_selected.to_csv(f"data/processed/{etf}_features.csv")
 
     for etf in etf_list:
         prepare_autoformer_input(
             input_csv_path=f"data/processed/{etf}_features.csv",
             output_dir="data/autoformer_input",
-            target_col="close"
+            target_col=TARGET
         )
 
     for etf in etf_list:
         train_autoformer(
             etf=etf,
             input_dir="data/autoformer_input",
-            output_dir=f"outputs/{etf}",
+            output_dir=f"outputs",
             pred_len=5,
-            target="close"
+            target=TARGET
         )
 
-    results = evaluate_all_etfs(etf_list, output_root="outputs")
+    results = evaluate_all_etfs(etf_list, model_name="Autoformer", output_root="outputs")
 
     summary = backtest_all(etf_list)
     print(summary)
-
+    
     models = ["Autoformer", "LSTM", "GRU", "Linear"]
-    summary_df = backtest_Model_all(etf_list, models)
-    print(summary_df)
+    #summary_df = backtest_Model_all(etf_list, models)
+    #print(summary_df)
