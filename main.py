@@ -14,14 +14,14 @@ if __name__ == "__main__":
     "XLF": "JPM US Equity"
     }
     etf_list = ["XLK"]
-    pred_len = 5
-    TARGET = "return_5d"
+    pred_len = 1
+    TARGET = "return"
     
     for etf in etf_list:
         df = make_combined_features(
             etf_ticker=etf,
             start="2018-01-01",
-            end="2024-12-31",
+            end="2025-07-30",
             sentiment_path="data/senti&price.xlsx",
             representative=REPRESENTATIVES[etf]
         )
@@ -44,7 +44,7 @@ if __name__ == "__main__":
             etf=etf,
             input_dir="data/autoformer_input",
             output_dir=f"outputs",
-            pred_len=5,
+            pred_len=pred_len,
             target=TARGET
         )
 

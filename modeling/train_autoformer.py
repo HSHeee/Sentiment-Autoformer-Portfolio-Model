@@ -10,7 +10,7 @@ def train_autoformer(
     input_dir: str = "data/autoformer_input",
     output_dir: str = "outputs",
     model_name = "Autoformer",
-    pred_len: int = 5,
+    pred_len: int = 1,
     target: str = "close"
 ):
     """
@@ -56,7 +56,7 @@ def train_autoformer(
         "--c_out", str(c_out),
         "--des", "Exp",
         "--itr", "1",
-        "--train_epochs", "1",     # 추후 조정 필요
+        "--train_epochs", "5",     # 추후 조정 필요
         "--batch_size", "32",
         "--learning_rate", "0.001",
         "--patience", "2",
@@ -68,7 +68,7 @@ def train_autoformer(
     subprocess.run(command)
 
     # setting 문자열 생성 규칙과 동일하게 맞춰야 함
-    setting = f"{etf}_{pred_len}d_Autoformer_custom_ftM_sl60_ll30_pl5_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0"
+    setting = f"{etf}_{pred_len}d{model_name}_custom_ftM_sl60_ll30_pl{pred_len}_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0"
     results_dir = os.path.join("results", setting)
     pred_path = os.path.join(results_dir, "pred.npy")
     true_path = os.path.join(results_dir, "true.npy")

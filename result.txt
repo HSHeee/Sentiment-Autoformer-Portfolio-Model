@@ -46,3 +46,21 @@ mse:1.152497410774231, mae:0.7749742865562439
 XLK_5d_Autoformer_custom_ftM_sl60_ll30_pl5_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
 mse:1.1746209859848022, mae:0.7908838391304016
 
+XLK_5d_Autoformer_custom_ftM_sl60_ll30_pl5_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.2264419794082642, mae:0.8180262446403503
+
+XLK_5d_Autoformer_custom_ftM_sl60_ll30_pl5_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.0531418323516846, mae:0.7280772924423218
+
+XLK_5d_Autoformer_custom_ftM_sl60_ll30_pl5_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.738599181175232, mae:0.7596644163131714
+
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.3193001747131348, mae:0.7044321894645691
+
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.3177250623703003, mae:0.7020097970962524
+
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.317510724067688, mae:0.7014773488044739
+
