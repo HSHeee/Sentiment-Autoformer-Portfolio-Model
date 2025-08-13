@@ -1,5 +1,5 @@
 import sys
-sys.path.append(r"C:\Project\Autoformer")
+sys.path.append("../Autoformer")
 import os
 import subprocess
 import numpy as np
@@ -36,7 +36,7 @@ def train_autoformer(
 
     # command-line 인자 구성
     command = [
-        "python", r"C:\Project\Autoformer\run.py",
+        "python", "../Autoformer/run.py",
         "--is_training", "1",
         "--root_path", root_path,
         "--data_path", data_path,
@@ -68,7 +68,7 @@ def train_autoformer(
     subprocess.run(command)
 
     # setting 문자열 생성 규칙과 동일하게 맞춰야 함
-    setting = f"{etf}_{pred_len}d{model_name}_custom_ftM_sl60_ll30_pl{pred_len}_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0"
+    setting = f"{etf}_{pred_len}d_{model_name}_custom_ftM_sl60_ll30_pl{pred_len}_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0"
     results_dir = os.path.join("results", setting)
     pred_path = os.path.join(results_dir, "pred.npy")
     true_path = os.path.join(results_dir, "true.npy")

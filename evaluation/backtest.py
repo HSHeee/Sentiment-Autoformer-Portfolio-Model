@@ -5,10 +5,8 @@ import os
 import matplotlib.font_manager as fm
 import platform
 
-font_path = "C:/Windows/Fonts/malgun.ttf"
-# 폰트 설정 적용
-font_prop = fm.FontProperties(fname=font_path)
-plt.rcParams["font.family"] = font_prop.get_name()
+
+plt.rcParams["font.family"] = "DejaVu Sans"
 
 # 마이너스 부호 깨짐 방지
 plt.rcParams["axes.unicode_minus"] = False

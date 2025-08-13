@@ -64,3 +64,12 @@ mse:1.3177250623703003, mae:0.7020097970962524
 XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
 mse:1.317510724067688, mae:0.7014773488044739
 
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.3205249309539795, mae:0.7008618712425232
+
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.3221182823181152, mae:0.7009470462799072
+
+XLK_1d_Autoformer_custom_ftM_sl60_ll30_pl1_dm512_nh8_el2_dl1_df2048_fc3_ebtimeF_dtTrue_Exp_0  
+mse:1.327116847038269, mae:0.70512855052948
+
