@@ -11,7 +11,7 @@ plt.rcParams["font.family"] = "DejaVu Sans"
 # 마이너스 부호 깨짐 방지
 plt.rcParams["axes.unicode_minus"] = False
 
-def simple_backtest(pred_path: str, price_path: str, etf: str = "") -> pd.DataFrame:
+def simple_backtest(pred_path: str, price_path: str, etf: str = "", short_enabled: bool = False) -> pd.DataFrame:
     """
     예측 결과를 바탕으로 단순 전략 백테스트 수행
 
@@ -44,8 +44,13 @@ def simple_backtest(pred_path: str, price_path: str, etf: str = "") -> pd.DataFr
         start_idx = -len(y_true)
         ret = price_df["return"].fillna(0).values[start_idx:]
 
-    signal = (y_pred > y_true).astype(int)
-    strategy_ret = signal * ret
+    signal = (y_pred > 0).astype(int)
+    
+    if short_enabled:
+        short_signal = (y_pred <= 0).astype(int)
+        strategy_ret = signal * ret - short_signal * ret
+    else:
+        strategy_ret = signal * ret
 
     strategy_cum = np.cumprod(1 + strategy_ret)
     bench_cum = np.cumprod(1 + ret)
@@ -94,7 +99,7 @@ def compute_risk_metrics(ret: np.ndarray) -> dict:
     }
 
 
-def backtest_all(etf_list, model_name="Autoformer", output_root="outputs", price_root="data/processed"):
+def backtest_all(etf_list, model_name="Autoformer", output_root="outputs", price_root="data/processed", short_enabled=False):
     """
     여러 ETF를 반복 백테스트하고 수익률/리스크 지표 비교
 
@@ -116,7 +121,7 @@ def backtest_all(etf_list, model_name="Autoformer", output_root="outputs", price
             print(f"[⚠️] {etf}: 데이터 누락, 건너뜀")
             continue
 
-        result_df = simple_backtest(pred_path, price_path, etf)
+        result_df = simple_backtest(pred_path, price_path, etf, short_enabled)
         strategy_daily = result_df["Strategy"].pct_change().fillna(0).values
         bench_daily = result_df["Benchmark"].pct_change().fillna(0).values
 
@@ -137,7 +142,7 @@ def backtest_all(etf_list, model_name="Autoformer", output_root="outputs", price
     return summary_df
 
 
-def backtest_Model_all(etf_list, model_list, output_root="outputs", price_root="data/processed"):
+def backtest_Model_all(etf_list, model_list, output_root="outputs", price_root="data/processed", short_enabled = False):
     """
     ETF × 모델 조합을 모두 백테스트하고 전략 성과 및 리스크 지표 요약
 
@@ -161,7 +166,7 @@ def backtest_Model_all(etf_list, model_list, output_root="outputs", price_root="
                 print(f"[⚠️] {model}/{etf}: prediction or price data not found. Skipping.")
                 continue
 
-            result_df = simple_backtest(pred_path, price_path, etf=f"{etf} ({model})")
+            result_df = simple_backtest(pred_path, price_path, short_enabled, etf=f"{etf} ({model})")
             strategy_daily = result_df["Strategy"].pct_change().fillna(0).values
             bench_daily = result_df["Benchmark"].pct_change().fillna(0).values
 
