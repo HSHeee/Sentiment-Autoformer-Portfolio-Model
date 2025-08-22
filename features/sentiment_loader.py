@@ -20,13 +20,28 @@ def load_sentiment_data(file_path: str, representative: str) -> pd.DataFrame:
     twit_sent = dfs['TWITTER_SENTIMENT'][representative]
     news_heat = dfs['NEWS_HEAT'][representative]
     neutral_news = dfs['NEWS_NTR_COUNT'][representative]
+    news_heat_z = (news_heat - news_heat.rolling(60, min_periods=30).mean()) / news_heat.rolling(60, min_periods=30).std()
+    news_sent_z = (news_sent - news_sent.rolling(60, min_periods=30).mean()) / news_sent.rolling(60, min_periods=30).std()
+
+    delta_news = news_sent.diff()
+    delta_twit = twit_sent.diff()
+    delta_ntr = neutral_news.diff()
+    gap = twit_sent - news_sent
+    z_diff = news_sent_z - news_sent_z.shift(1)
 
     # 병합
     df = pd.concat([
         news_sent.rename("news_sentiment"),
         twit_sent.rename("twitter_sentiment"),
         news_heat.rename("news_heat"),
-        neutral_news.rename("neutral_news_count")
+        neutral_news.rename("neutral_news_count"),
+        news_heat_z.rename("news_heat_z"),
+        news_sent_z.rename("news_sent_z"),
+        delta_news.rename("delta_news"),
+        delta_twit.rename("delta_twit"),
+        delta_ntr.rename("delta_ntr"),
+        gap.rename("gap"),
+        z_diff.rename("z_diff")
     ], axis=1)
 
     # 결측치 처리

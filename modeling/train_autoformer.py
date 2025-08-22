@@ -5,24 +5,34 @@ import subprocess
 import numpy as np
 import pandas as pd
 
-def train_autoformer(
+def train_autoformer0(
     etf: str,
     input_dir: str = "data/autoformer_input",
     output_dir: str = "outputs",
-    model_name = "Autoformer",
+    model_name="Autoformer",
     pred_len: int = 1,
-    target: str = "close"
+    target: str = "close",
+    hyperparams: dict = None  # 하이퍼파라미터를 딕셔너리로 전달
 ):
     """
-    공식 Autoformer run.py를 subprocess로 실행해 학습 시작
-
-    Parameters:
-    - etf (str): 예측할 ETF 이름 (ex: 'XLK')
-    - input_dir (str): Autoformer용 CSV가 저장된 경로
-    - output_dir (str): 결과가 저장될 폴더
-    - pred_len (int): 예측 길이 (예: 1일, 5일 등)
-    - target (str): 예측 대상 열
+    기업별 하이퍼파라미터를 적용한 Autoformer 학습
     """
+    # 기본 하이퍼파라미터 설정
+    default_params = {
+        "d_model": 512,
+        "num_enc_layers": 2,
+        "num_dec_layers": 1,
+        "learning_rate": 0.001,
+    }
+    # 전달된 하이퍼파라미터로 덮어쓰기
+    if hyperparams:
+        default_params.update(hyperparams)
+
+    d_model = default_params["d_model"]
+    num_enc_layers = default_params["num_enc_layers"]
+    num_dec_layers = default_params["num_dec_layers"]
+    learning_rate = default_params["learning_rate"]
+
     root_path = input_dir
     data_path = f"{etf}_autoformer.csv"
 
@@ -48,17 +58,18 @@ def train_autoformer(
         "--seq_len", "60",
         "--label_len", "30",
         "--pred_len", str(pred_len),
-        "--e_layers", "2",
-        "--d_layers", "1",
+        "--e_layers", str(num_enc_layers),
+        "--d_layers", str(num_dec_layers),
         "--factor", "3",
         "--enc_in", str(enc_in),             # placeholder, Autoformer 내부에서 계산
         "--dec_in", str(dec_in),
         "--c_out", str(c_out),
         "--des", "Exp",
         "--itr", "1",
-        "--train_epochs", "5",     # 추후 조정 필요
+        "--train_epochs", "10",     # 추후 조정 필요
         "--batch_size", "32",
-        "--learning_rate", "0.001",
+        "--learning_rate", str(learning_rate),
+        "--d_model", str(d_model),
         "--patience", "2",
         "--checkpoints", output_dir
     ]
@@ -117,6 +128,124 @@ def train_autoformer(
         date_col = np.array(date_col)
 
         # 길이 맞추기 (혹시라도 오버플로우 방지)
+        min_len = min(len(date_col), len(preds), len(trues))
+        date_col = date_col[:min_len]
+        preds = preds[:min_len]
+        trues = trues[:min_len]
+
+        df = pd.DataFrame({"date": date_col, "true": trues, "pred": preds})
+        df.to_csv(csv_path, index=False)
+        print(f"[✔] prediction.csv saved: {csv_path}")
+    else:
+        print(f"[⚠️] pred.npy or true.npy not found in {results_dir}")
+
+
+
+def train_autoformer(
+    etf: str,
+    input_dir: str = "data/autoformer_input",
+    output_dir: str = "outputs",
+    model_name="Autoformer",
+    pred_len: int = 1,
+    target: str = "close",
+    hyperparams: dict = None  # 하이퍼파라미터를 딕셔너리로 전달
+):
+    """
+    기업별 하이퍼파라미터를 적용한 Autoformer 학습
+    """
+    # 기본 하이퍼파라미터 설정
+    default_params = {
+        "d_model": 512,
+        "num_enc_layers": 2,
+        "num_dec_layers": 1,
+        "learning_rate": 0.001,
+    }
+    # 전달된 하이퍼파라미터로 덮어쓰기
+    if hyperparams:
+        default_params.update(hyperparams)
+
+    d_model = default_params["d_model"]
+    num_enc_layers = default_params["num_enc_layers"]
+    num_dec_layers = default_params["num_dec_layers"]
+    learning_rate = default_params["learning_rate"]
+    
+    root_path = input_dir
+    data_path = f"{etf}_autoformer.csv"
+
+    # 입력 feature 개수 자동 계산
+    csv_path = os.path.join(input_dir, data_path)
+    df = pd.read_csv(csv_path)
+    feature_cols = [col for col in df.columns if col not in ["date", target]]
+    enc_in = len(feature_cols) + 1  # +1은 target 포함(Multivariate 예측시)
+    dec_in = enc_in
+    c_out = 1
+
+    # command-line 인자 구성
+    command = [
+        "python", "../Autoformer/run.py",
+        "--is_training", "1",
+        "--root_path", root_path,
+        "--data_path", data_path,
+        "--model_id", f"{etf}_{pred_len}d",
+        "--model", model_name,
+        "--data", "custom",
+        "--features", "M",             # Multivariate
+        "--target", target,
+        "--seq_len", "60",
+        "--label_len", "30",
+        "--pred_len", str(pred_len),
+        "--e_layers", str(num_enc_layers),
+        "--d_layers", str(num_dec_layers),
+        "--factor", "3",
+        "--enc_in", str(enc_in),
+        "--dec_in", str(dec_in),
+        "--c_out", str(c_out),
+        "--des", "Exp",
+        "--itr", "1",
+        "--train_epochs", "10",     # 추후 조정 필요
+        "--batch_size", "32",
+        "--learning_rate", str(learning_rate),
+        "--d_model", str(d_model),
+        "--patience", "2",
+        "--checkpoints", output_dir
+    ]
+
+    # 실행
+    print(f"[▶] Training {model_name} for {etf} ({pred_len}d)")
+    subprocess.run(command)
+
+    # 결과 저장 경로 설정
+    setting = f"{etf}_{pred_len}d_{model_name}_custom_ftM_sl60_ll30_pl{pred_len}_dm{d_model}_nh8_el{num_enc_layers}_dl{num_dec_layers}_df2048_fc3_ebtimeF_dtTrue_Exp_0"
+    results_dir = os.path.join("results", setting)
+    pred_path = os.path.join(results_dir, "pred.npy")
+    true_path = os.path.join(results_dir, "true.npy")
+    csv_path = os.path.join(output_dir, model_name, f"{etf}_prediction.csv")
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    # 결과 파일 처리
+    if os.path.exists(pred_path) and os.path.exists(true_path):
+        preds = np.load(pred_path)  # (N, pred_len, 1)
+        trues = np.load(true_path)  # (N, pred_len, 1)
+        N, pred_len, _ = preds.shape
+        preds = preds.reshape(-1)
+        trues = trues.reshape(-1)
+
+        df_input = pd.read_csv(os.path.join(input_dir, data_path))
+        date_arr = pd.to_datetime(df_input["date"].values)
+
+        seq_len = 60  # 반드시 run.py와 동일하게!
+        label_len = 30  # 반드시 run.py와 동일하게!
+
+        # test 샘플의 시작 인덱스들
+        test_start_idxs = np.arange(len(date_arr) - N - pred_len + 1, len(date_arr) - pred_len + 1)
+        # 각 샘플별 예측 날짜
+        date_col = []
+        for idx in test_start_idxs:
+            pred_dates = date_arr[idx + seq_len + label_len : idx + seq_len + label_len + pred_len]
+            date_col.extend(pred_dates)
+        date_col = np.array(date_col)
+
+        # 길이 맞추기
         min_len = min(len(date_col), len(preds), len(trues))
         date_col = date_col[:min_len]
         preds = preds[:min_len]

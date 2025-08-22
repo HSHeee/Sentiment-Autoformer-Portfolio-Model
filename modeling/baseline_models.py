@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class LSTMModel(nn.Module):
     def __init__(self, input_dim, hidden_dim=64, num_layers=1, output_dim=1):
         super().__init__()

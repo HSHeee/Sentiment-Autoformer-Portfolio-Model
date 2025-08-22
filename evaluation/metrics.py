@@ -17,11 +17,13 @@ def evaluate_prediction(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     mae = mean_absolute_error(y_true, y_pred)
     mape = np.mean(np.abs((y_true - y_pred) / y_true + 1e-8)) * 100
+    mse = mean_squared_error(y_true, y_pred)
 
     return {
         "RMSE": rmse,
         "MAE": mae,
-        "MAPE (%)": mape
+        "MAPE (%)": mape,
+        "MSE": mse
     }
 
 
