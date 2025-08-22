@@ -16,6 +16,8 @@ def load_sentiment_data(file_path: str, representative: str) -> pd.DataFrame:
     dfs = {sheet: pd.read_excel(file_path, sheet_name=sheet, index_col=0) for sheet in xls.sheet_names}
 
     # 종목별 데이터 추출
+    price = dfs['price'][representative]
+    Return = dfs['return'][representative]
     news_sent = dfs['NEWS_SENTIMENT'][representative]
     twit_sent = dfs['TWITTER_SENTIMENT'][representative]
     news_heat = dfs['NEWS_HEAT'][representative]
@@ -31,6 +33,8 @@ def load_sentiment_data(file_path: str, representative: str) -> pd.DataFrame:
 
     # 병합
     df = pd.concat([
+        Return.rename("return"),
+        price.rename("price"),
         news_sent.rename("news_sentiment"),
         twit_sent.rename("twitter_sentiment"),
         news_heat.rename("news_heat"),

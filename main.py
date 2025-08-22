@@ -9,12 +9,6 @@ from utils.parallel_training import *
 
 
 if __name__ == "__main__":
-    REPRESENTATIVES2 = {
-    "XLK": ["MSFT US Equity", "AAPL US Equity", "GOOGL US Equity"],
-    "XLF": ["JPM US Equity", "V US Equity"],
-    }
-    etf_list2 = ["XLK","XLF"]
-
     REPRESENTATIVES = {
     "MSFT": ["MSFT US Equity"],
     "AAPL": ["AAPL US Equity"],
@@ -26,7 +20,7 @@ if __name__ == "__main__":
     "JPM": ["JPM US Equity"],
     "V": ["V US Equity"],
     }
-    etf_list = ["ORCL","AMZN"] #"MSFT","AAPL","GOOGL",,"META","NFLX","JPM","V"
+    etf_list = ["MSFT","AAPL","GOOGL","ORCL","AMZN","META","NFLX","JPM"] #,"V"
     pred_len = 1
     TARGET = "return"
     input_dir = "data/autoformer_input"
@@ -34,6 +28,7 @@ if __name__ == "__main__":
     n_trials = 10
     n_jobs = 1 # 병렬로 돌릴 개수
     gpu_ids = [0]  # 사용 가능한 GPU ID 리스트
+    
     
     for etf in etf_list:
         constituents = REPRESENTATIVES[etf]
@@ -60,11 +55,18 @@ if __name__ == "__main__":
         )
 
     # 2. 각 ETF별 하이퍼파라미터 튜닝
-    best_params_per_etf = parallel_tune(etf_list, input_dir, output_dir, pred_len, TARGET, n_trials, n_jobs, gpu_ids)
-
+    #best_params_per_etf = parallel_tune(etf_list, input_dir, output_dir, pred_len, TARGET, n_trials, n_jobs, gpu_ids)
+    best_params_per_etf = {
+        "MSFT": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 2, "learning_rate": 7.447809323751878e-05},
+        "AAPL": {"d_model": 640, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0015922121189894647},
+        "GOOGL": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 4, "learning_rate": 0.0007873402514487448},
+        "ORCL": {"d_model": 384, "num_enc_layers": 2, "num_dec_layers": 2, "learning_rate": 0.0003962772798271517},
+        "AMZN": {"d_model": 1024, "num_enc_layers": 1, "num_dec_layers": 2, "learning_rate": 7.692523293388344e-05},
+        "META": {"d_model": 896, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0003744590769144018},
+        "NFLX": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 2, "learning_rate": 0.0004357912428052041},
+        "JPM": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.001319618751414433},
+    }
     print("BBBBBBBBBBBBBBBBBeest parma :", best_params_per_etf)
-    parallel_train(etf_list, input_dir, output_dir, pred_len, TARGET, best_params_per_etf, gpu_ids)
-
 
     # 3. 병렬로 학습 실행
     parallel_train(etf_list, input_dir, output_dir, pred_len, TARGET, best_params_per_etf, gpu_ids)
