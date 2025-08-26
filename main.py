@@ -1,4 +1,5 @@
-from features.generate_features import make_combined_features
+from features.sentiment_loader import load_sentiment_data
+from features.generate_features import make_combined_features, prepare_data
 from preprocessing.lasso_selector import lasso_feature_selection, calculate_feature_importance
 from preprocessing.input_transform import prepare_autoformer_input
 from modeling.train_autoformer import train_autoformer
@@ -10,62 +11,49 @@ from utils.parallel_training import *
 
 if __name__ == "__main__":
     REPRESENTATIVES = {
-    "MSFT": ["MSFT US Equity"],
-    "AAPL": ["AAPL US Equity"],
-    "GOOGL": ["GOOGL US Equity"],
-    "ORCL": ["ORCL US Equity"],
-    "AMZN": ["AMZN US Equity"],
-    "META": ["META US Equity"],
-    "NFLX": ["NFLX US Equity"],
-    "JPM": ["JPM US Equity"],
-    "V": ["V US Equity"],
+        "MSFT": "MSFT US Equity",
+        "AAPL": "AAPL US Equity",
+        "GOOGL": "GOOGL US Equity",
+        "ORCL": "ORCL US Equity",
+        "AMZN": "AMZN US Equity",
+        "META": "META US Equity",
+        "NFLX": "NFLX US Equity",
+        "JPM": "JPM US Equity",
+        "V": "V US Equity",
     }
-    etf_list = ["MSFT","AAPL","GOOGL","ORCL","AMZN","META","NFLX","JPM"] #,"V"
+    etf_list = ["MSFT","AAPL","GOOGL","ORCL","AMZN","META","NFLX","JPM","V"] #
     pred_len = 1
     TARGET = "return"
+    sentiment_path ="data/senti&price.xlsx"
     input_dir = "data/autoformer_input"
+    processed_dir = "data/processed"
     output_dir = "outputs"
     n_trials = 10
     n_jobs = 1 # 병렬로 돌릴 개수
     gpu_ids = [0]  # 사용 가능한 GPU ID 리스트
-    
-    
-    for etf in etf_list:
-        constituents = REPRESENTATIVES[etf]
-        df = make_combined_features(
-            etf_ticker=etf,
-            start="2018-01-01",
-            end="2025-07-30",
-            sentiment_path="data/senti&price.xlsx",
-            representatives=constituents
-        )
 
-        df = df.drop(columns=["ticker", "close", "open", "high", "low", "volume","return_5d"])
-        df = df.dropna()
- 
-        df_selected, features = lasso_feature_selection(df, target_col=TARGET)
-        df_selected.to_csv(f"data/processed/{etf}_features.csv")
-        calculate_feature_importance(df_selected, target_col=TARGET)
-
+    # 데이터 준비
+    #sentiment_data = load_sentiment_data(sentiment_path, processed_dir, etf_list, REPRESENTATIVES)
+    sentiment_data = {}
     for etf in etf_list:
-        prepare_autoformer_input(
-            input_csv_path=f"data/processed/{etf}_features.csv",
-            output_dir=input_dir,
-            target_col=TARGET
-        )
+        df = pd.read_csv(processed_dir + f"/{etf}_features.csv")
+        sentiment_data[etf] = df
+    print("processed finish")
+
+    #prepare_autoformer_input(etf_list, sentiment_data, input_dir, TARGET)
 
     # 2. 각 ETF별 하이퍼파라미터 튜닝
-    #best_params_per_etf = parallel_tune(etf_list, input_dir, output_dir, pred_len, TARGET, n_trials, n_jobs, gpu_ids)
-    best_params_per_etf = {
-        "MSFT": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 2, "learning_rate": 7.447809323751878e-05},
-        "AAPL": {"d_model": 640, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0015922121189894647},
-        "GOOGL": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 4, "learning_rate": 0.0007873402514487448},
-        "ORCL": {"d_model": 384, "num_enc_layers": 2, "num_dec_layers": 2, "learning_rate": 0.0003962772798271517},
-        "AMZN": {"d_model": 1024, "num_enc_layers": 1, "num_dec_layers": 2, "learning_rate": 7.692523293388344e-05},
-        "META": {"d_model": 896, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0003744590769144018},
-        "NFLX": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 2, "learning_rate": 0.0004357912428052041},
-        "JPM": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.001319618751414433},
-    }
+    best_params_per_etf = parallel_tune(etf_list, input_dir, output_dir, pred_len, TARGET, n_trials, n_jobs, gpu_ids)
+    #best_params_per_etf = {
+    #    "MSFT": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 2, "learning_rate": 7.447809323751878e-05},
+    #    "AAPL": {"d_model": 640, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0015922121189894647},
+    #    "GOOGL": {"d_model": 384, "num_enc_layers": 3, "num_dec_layers": 4, "learning_rate": 0.0007873402514487448},
+    #    "ORCL": {"d_model": 384, "num_enc_layers": 2, "num_dec_layers": 2, "learning_rate": 0.0003962772798271517},
+    #    "AMZN": {"d_model": 1024, "num_enc_layers": 1, "num_dec_layers": 2, "learning_rate": 7.692523293388344e-05},
+    #    "META": {"d_model": 896, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.0003744590769144018},
+    #    "NFLX": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 2, "learning_rate": 0.0004357912428052041},
+    #    "JPM": {"d_model": 384, "num_enc_layers": 4, "num_dec_layers": 1, "learning_rate": 0.001319618751414433},
+    #}
     print("BBBBBBBBBBBBBBBBBeest parma :", best_params_per_etf)
 
     # 3. 병렬로 학습 실행

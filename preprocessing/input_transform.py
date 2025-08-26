@@ -1,7 +1,8 @@
 import pandas as pd
 import os
+from preprocessing.lasso_selector import lasso_feature_selection, calculate_feature_importance
 
-def prepare_autoformer_input(
+def prepare_autoformer_input0(
     input_csv_path: str,
     output_dir: str,
     target_col: str = "close"
@@ -28,3 +29,21 @@ def prepare_autoformer_input(
 
     df.to_csv(output_path, index=False)
     print(f"[✔] Saved Autoformer input: {output_path}")
+
+
+def prepare_autoformer_input(etf_list, sentiment_data, input_dir, TARGET):
+    for etf in etf_list:
+        df = sentiment_data[etf]
+        df = df.drop(columns=["price"])
+        df = df.infer_objects(copy=False).interpolate(method="linear").dropna()
+        df_selected, features = lasso_feature_selection(df, target_col=TARGET)
+        #df_selected = df_selected.add_prefix(f"{etf}_")
+        calculate_feature_importance(df_selected, target_col=TARGET)
+
+        df_selected.reset_index(inplace=True)
+        df_selected.rename(columns={"index": "date"}, inplace=True)
+        df_selected = df_selected.sort_values("date")
+        df_selected.to_csv(f"{input_dir}/{etf}_autoformer.csv", index=False)
+        print(f"[✔] Saved Autoformer input: {input_dir}/{etf}_autoformer.csv")
+
+    return 

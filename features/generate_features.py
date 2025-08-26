@@ -1,11 +1,14 @@
 # features/generate_features.py
 
 import pandas as pd
+import os
+import talib
 from functools import reduce
 from features.price_tech import download_etf_data
 from features.sentiment_loader import load_sentiment_data
+from preprocessing.lasso_selector import lasso_feature_selection
 
-def make_combined_features(
+def make_combined_features0(
     etf_ticker: str,
     start: str,
     end: str,
@@ -29,7 +32,7 @@ def make_combined_features(
     #price_df = download_etf_data(etf_ticker, start, end)
     #price_df.index = pd.to_datetime(price_df.index)
     #price_df["momentum_3d"] = price_df["close"].pct_change(periods=3)
-
+    print("data generate")
     
     # 2. 감정지수 불러오기
     stock_feature_list = []
@@ -70,7 +73,6 @@ def make_combined_features(
         stock_senti_df['macd_signal'] = macdsignal
         stock_senti_df['macd_hist'] = macdhist
         stock_senti_df['sma_20'] = talib.SMA(stock_senti_df['price'].astype(float), timeperiod=20)
-        stock_senti_df["ticker"] = ticker
         stock_senti_df["momentum_3d"] = momentum_3d
 
 
@@ -86,3 +88,53 @@ def make_combined_features(
     df_merged = df_merged.infer_objects(copy=False).interpolate(method="linear").dropna()
 
     return df_merged
+
+def make_combined_features(etf_ticker: str, sentiment_data: dict, representatives: list) -> pd.DataFrame:
+    """
+    ETF 가격 + 기술지표 + 감정지수를 통합한 단일 DataFrame 생성
+
+    Parameters:
+    - etf_ticker (str): ETF 티커 (예: 'XLK')
+    - sentiment_data (dict): ETF별 감정 데이터 딕셔너리
+    - representatives (list): ETF에 포함된 종목 티커 (예: ['MSFT US Equity', 'AAPL US Equity'])
+
+    Returns:
+    - pd.DataFrame: 날짜 인덱스를 기준으로 병합된 통합 피처
+    """
+    stock_feature_list = []
+    for stock in representatives:
+        if stock not in sentiment_data:
+            print(f"[⚠️] Sentiment data not found for {stock}. Skipping.")
+            continue
+
+        stock_senti_df = sentiment_data[stock]
+        stock_senti_df = stock_senti_df.add_prefix(f"{stock}_")
+        stock_feature_list.append(stock_senti_df)
+
+    # 모든 종목별 감정지수 데이터 병합
+    df_merged = reduce(lambda left, right: pd.merge(left, right, left_index=True, right_index=True, how="inner"), stock_feature_list)
+
+    # 결측치 보간 또는 제거
+    df_merged = df_merged.infer_objects(copy=False).interpolate(method="linear").dropna()
+
+    return df_merged
+
+def prepare_data(etf_list, sentiment_data, input_dir, processed_dir, target_col, representatives, checking: bool):
+
+    for etf in etf_list:
+        processed_file = f"{processed_dir}/{etf}_features.csv"
+        autoformer_file = f"{input_dir}/{etf}_autoformer.csv"
+
+        if checking == True : 
+            if os.path.exists(processed_file) and os.path.exists(autoformer_file):
+                print(f"[INFO] Cached data found for {etf}. Skipping processing.")
+                continue
+
+        print(f"[▶] Processing data for {etf}...")
+        df_selected, features = lasso_feature_selection(df, target_col=target_col)
+        df_selected = make_combined_features(etf_ticker=etf, sentiment_data=df_selected, representatives=representatives[etf])
+        df_selected.to_csv(processed_file, index=False)
+        calculate_feature_importance(df_selected, target_col=target_col)
+
+        prepare_autoformer_input(input_csv_path=processed_file, output_dir=input_dir, target_col=target_col)
+        print(f"[✔] Data processing completed for {etf}.")

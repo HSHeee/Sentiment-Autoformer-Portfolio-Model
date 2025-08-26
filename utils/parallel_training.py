@@ -104,6 +104,14 @@ def parallel_train(etf_list, input_dir, output_dir, pred_len, target, best_param
     for i, etf in enumerate(etf_list):
         gpu_id = gpu_ids[i % len(gpu_ids)]  # GPU ID 순환 할당
         wait_for_available_memory(gpu_id)
+        if etf not in best_params_per_etf:
+            print(f"[⚠️] No hyperparameters found for {etf}. Using default parameters.")
+            best_params_per_etf[etf] = {
+                "d_model": 512,
+                "num_enc_layers": 2,
+                "num_dec_layers": 1,
+                "learning_rate": 0.001,
+            }
         p = Process(target=train_etf, args=(etf, input_dir, output_dir, pred_len, target, best_params_per_etf[etf], gpu_id))
         processes.append(p)
         p.start()
@@ -122,7 +130,22 @@ def parallel_train(etf_list, input_dir, output_dir, pred_len, target, best_param
     torch.cuda.empty_cache()
     print("[✔] All training processes completed.")
 
+def run_training_with_existing_params(etf_list, best_params_per_etf, input_dir, output_dir, pred_len, target, gpu_ids):
+    """
+    이미 튜닝된 하이퍼파라미터를 사용하여 학습 실행
 
+    Parameters:
+    - etf_list (list): 학습할 ETF 리스트
+    - best_params_per_etf (dict): 각 ETF별 최적 하이퍼파라미터 딕셔너리
+    - input_dir (str): Autoformer 입력 데이터 경로
+    - output_dir (str): Autoformer 출력 데이터 경로
+    - pred_len (int): 예측 길이
+    - target (str): 예측 대상 열 이름
+    - gpu_ids (list): 사용 가능한 GPU ID 리스트
+    """
+    print("[▶] Starting training with existing hyperparameters...")
+    parallel_train(etf_list, input_dir, output_dir, pred_len, target, best_params_per_etf, gpu_ids)
+    print("[✔] Training completed.")
 
 def wait_for_available_memory(gpu_id, required_memory=4* 1024 * 1024 * 1024):  # 4GB 기본값
     """
