@@ -147,7 +147,7 @@ def train_autoformer(
     output_dir: str = "outputs",
     model_name="Autoformer",
     pred_len: int = 1,
-    target: str = "close",
+    target: str = "return",
     hyperparams: dict = None  # 하이퍼파라미터를 딕셔너리로 전달
 ):
     """
@@ -207,8 +207,10 @@ def train_autoformer(
         "--learning_rate", str(learning_rate),
         "--d_model", str(d_model),
         "--patience", "2",
-        "--checkpoints", output_dir
+        "--checkpoints", output_dir,
+        "--do_predict", "True"
     ]
+
 
     # 실행
     print(f"[▶] Training {model_name} for {etf} ({pred_len}d)")
@@ -226,6 +228,9 @@ def train_autoformer(
     if os.path.exists(pred_path) and os.path.exists(true_path):
         preds = np.load(pred_path)  # (N, pred_len, 1)
         trues = np.load(true_path)  # (N, pred_len, 1)
+        print("preds:", preds)
+        print("trues:", trues)
+
         N, pred_len, _ = preds.shape
         preds = preds.reshape(-1)
         trues = trues.reshape(-1)

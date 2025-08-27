@@ -76,7 +76,7 @@ def simple_backtest0(pred_path: str, price_path: str, etf: str, short_enabled: b
 
 def simple_backtest(
     pred_path: str,
-    price_path: str,
+    return_path: str,
     etf: str,
     short_enabled: bool,
     full_position: bool,          # 항상 롱/숏 유지
@@ -93,7 +93,7 @@ def simple_backtest(
 
     # 1) 데이터 로드 & 머지
     pred_df = pd.read_csv(pred_path)
-    px = pd.read_csv(price_path, index_col=0, parse_dates=True).sort_index()
+    px = pd.read_csv(return_path, index_col=0, parse_dates=True).sort_index()
     px = px[~px.index.duplicated(keep="first")]
 
     if "date" in pred_df.columns:
@@ -208,6 +208,8 @@ def simple_backtest(
     # 7) 누적수익
     strategy_cum = np.cumprod(1.0 + np.nan_to_num(strat_ret, nan=0.0))
     bench_cum = np.cumprod(1.0 + np.nan_to_num(ret, nan=0.0))
+    #print("strat_ret:", strat_ret)
+    #print("ret:", ret)
 
     result = pd.DataFrame(
         {"Strategy": strategy_cum, "Benchmark": bench_cum, "Position": pos, "Traded": traded},
@@ -221,7 +223,7 @@ def simple_backtest(
     plt.title(f"{etf} Autoformer Returns")
     plt.xlabel("Date"); plt.ylabel("Cumulative Return")
     plt.legend(); plt.grid(True); plt.tight_layout()
-    plt.show()
+    #plt.show()
 
     return result
 
@@ -297,7 +299,7 @@ def backtest_all(
     etf_list,
     model_name: str = "Autoformer",
     output_root: str = "outputs",
-    price_root: str = "data/processed",
+    return_root: str = "data/processed",
     short_enabled: bool = True,
     # 아래부터 simple_backtest로 패스되는 옵션들(원하면 생략 가능)
     full_position: bool = True,
@@ -309,7 +311,7 @@ def backtest_all(
     vol_lookback: int = 20,
     # 시각화 옵션
     plot_trades: bool = False,
-    price_col_candidates=("Close","Adj Close","Adj_Close","close","adj_close","PX_LAST")
+    return_col_candidates=("return","Return")
 ):
     """
     여러 ETF를 반복 백테스트하고 수익률/리스크 지표 비교
@@ -330,16 +332,16 @@ def backtest_all(
 
     for etf in etf_list:
         pred_path = os.path.join(output_root, model_name, f"{etf}_prediction.csv")
-        price_path = os.path.join(price_root, f"{etf}_features.csv")
+        return_path = os.path.join(return_root, f"{etf}_features.csv")
 
-        if not os.path.exists(pred_path) or not os.path.exists(price_path):
+        if not os.path.exists(pred_path) or not os.path.exists(return_path):
             print(f"[⚠️] {etf}: 데이터 누락, 건너뜀")
             continue
 
         # --- 전략 백테스트 실행 ---
         result_df = simple_backtest(
             pred_path=pred_path,
-            price_path=price_path,
+            return_path=return_path,
             etf=etf,
             short_enabled=short_enabled,
             full_position=full_position,
@@ -370,7 +372,7 @@ def backtest_all(
 
         # --- (옵션) 트레이드 점 시각화 ---
         if plot_trades:
-            px = pd.read_csv(price_path, index_col=0, parse_dates=True).sort_index()
+            px = pd.read_csv(return_path, index_col=0, parse_dates=True).sort_index()
             # 인덱스 정렬/교집합은 함수 내부에서 다시 처리되지만, 아래처럼 넘기면 충분
             plot_price_with_trades_dualaxis(
                 price_df=px,
