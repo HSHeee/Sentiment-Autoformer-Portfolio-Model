@@ -1,4 +1,3 @@
-# modeling/nsautoformer.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -66,24 +65,25 @@ class NSAutoformerBlock(nn.Module):
 
 
 class NSAutoformer(nn.Module):
-    def __init__(self, input_dim, d_model=64, kernel_size=25, n_heads=4, n_blocks=2, out_len=1):
+    def __init__(self, input_dim, sentiment_dim, d_model=64, kernel_size=25, n_heads=4, n_blocks=2, out_len=1):
         super().__init__()
         self.embed = nn.Linear(input_dim, d_model)
+        self.sentiment_embed = nn.Linear(sentiment_dim, d_model)  # 센티멘트 임베딩 추가
         self.blocks = nn.ModuleList([
             NSAutoformerBlock(d_model, kernel_size, n_heads) for _ in range(n_blocks)
         ])
         self.projection = nn.Linear(d_model, out_len)
 
-    def forward(self, x):
+    def forward(self, x, sentiment):
         """
-        Parameters:
-        - x: (B, T, F) → F는 feature 개수, T는 시계열 길이
-
-        Returns:
-        - forecast: (B, out_len)
+        x: (B, T, F) - 시계열 데이터
+        sentiment: (B, T, S) - 센티멘트 데이터
         """
         x = self.embed(x)
+        sentiment = self.sentiment_embed(sentiment)
+        x = x + sentiment  # 센티멘트와 시계열 데이터 결합
+
         for block in self.blocks:
             x = block(x)
-        x = self.projection(x[:, -1, :])  # 마지막 시점만 예측
+        x = self.projection(x[:, -1, :])
         return x

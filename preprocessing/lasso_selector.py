@@ -3,6 +3,8 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LassoCV
+from sklearn.ensemble import GradientBoostingRegressor
+import matplotlib.pyplot as plt
 
 def lasso_feature_selection(df: pd.DataFrame, target_col: str, alpha_range=(0.0001, 1.0)) -> tuple:
     """
@@ -32,8 +34,38 @@ def lasso_feature_selection(df: pd.DataFrame, target_col: str, alpha_range=(0.00
     coef = pd.Series(model.coef_, index=X.columns)
     selected_features = coef[coef != 0].index.tolist()
 
+    # 선택된 feature와 중요도 출력
+    print("Selected Features:", selected_features)
+    print("Feature Importance:", coef[coef != 0])
+
     # 5. 선택된 피처만 정규화 데이터로 반환
     selected_df = pd.DataFrame(X_scaled, columns=X.columns, index=df.index)[selected_features]
     selected_df[target_col] = y.values  # 타겟 복원
 
     return selected_df, selected_features
+
+def calculate_feature_importance(df: pd.DataFrame, target_col: str):
+    """
+    LightGBM/XGBoost를 사용하여 feature importance 계산 및 시각화
+    """
+    # 데이터 분리
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
+
+    # 모델 학습
+    model = GradientBoostingRegressor(random_state=42)
+    model.fit(X, y)
+
+    # Feature Importance 계산
+    importance = model.feature_importances_
+    feature_names = X.columns
+
+    # 시각화
+    plt.figure(figsize=(10, 6))
+    plt.barh(feature_names, importance, color='skyblue')
+    plt.xlabel('Importance')
+    plt.ylabel('Features')
+    plt.title('Feature Importance (GradientBoosting)')
+    plt.show()
+
+    return importance
